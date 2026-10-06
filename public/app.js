@@ -1,4 +1,5 @@
 import { Kiosk, PRODUCTS, money, parseCash } from './model.js';
+import { savePayment } from './checkout.js';
 
 const kiosk = new Kiosk();
 const app = document.querySelector('#app');
@@ -46,6 +47,9 @@ function electronicView() {
 function processingView() {
   return `<section class="panel state-panel" role="status"><div class="spinner" aria-hidden="true"></div><p class="eyebrow">${kiosk.method.toUpperCase()}</p><h1 tabindex="-1">Processing payment…</h1><p>Please wait while we complete your simulated payment.</p><strong class="processing-total">${money(kiosk.pending.total)}</strong></section>`;
 }
+function paymentErrorView() {
+  return `<section class="panel state-panel"><p class="eyebrow">CONFIRMATION NEEDED</p><h1 tabindex="-1">Let’s try that again</h1><p role="alert">We couldn’t confirm your saved transaction. Check your connection, then retry.</p><p>Your order is held safely on this screen. Retrying the same payment will not create a duplicate transaction.</p><button class="primary full" data-action="retry">Retry payment confirmation</button></section>`;
+}
 function paymentDetails(receipt) {
   return `<dl class="payment-details"><div><dt>Payment method</dt><dd>${receipt.method}</dd></div><div><dt>Transaction amount</dt><dd>${money(receipt.total)}</dd></div><div><dt>Amount paid</dt><dd>${money(receipt.paid)}</dd></div><div class="change-row"><dt>Change</dt><dd>${money(receipt.change)}</dd></div></dl>`;
 }
@@ -72,21 +76,23 @@ function updateCashPreview() {
 function render(moveFocus = false) {
   const stageIndex = kiosk.stage === 'items' ? 0 : kiosk.stage === 'review' ? 1 : ['success', 'receipt'].includes(kiosk.stage) ? 3 : 2;
   document.querySelector('#progress').innerHTML = ['Choose items', 'Review order', 'Payment', 'Receipt'].map((name, i) => `<div class="step ${i === stageIndex ? 'active' : i < stageIndex ? 'done' : ''}" ${i === stageIndex ? 'aria-current="step"' : ''}><span>${i < stageIndex ? '✓' : i + 1}</span>${name}</div>`).join('');
-  const views = { items: itemView, review: reviewView, method: methodsView, cash: cashView, qr: electronicView, card: electronicView, processing: processingView, success: successView, receipt: receiptView };
+  const views = { items: itemView, review: reviewView, method: methodsView, cash: cashView, qr: electronicView, card: electronicView, processing: processingView, 'payment-error': paymentErrorView, success: successView, receipt: receiptView };
   app.innerHTML = views[kiosk.stage]();
   if (kiosk.stage === 'cash') updateCashPreview();
   if (moveFocus) { app.querySelector('h1')?.focus(); window.scrollTo({ top: 0, behavior: 'instant' }); }
 }
-async function pay() {
+async function pay(retry = false) {
   try {
-    kiosk.beginPayment(cashInput);
+    if (retry) kiosk.retryPayment();
+    else kiosk.beginPayment(cashInput);
     paymentError = '';
     cashInput = '';
     render(true);
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    kiosk.finishPayment();
+    const [savedReceipt] = await Promise.all([savePayment(kiosk.pending), new Promise(resolve => setTimeout(resolve, 1200))]);
+    kiosk.finishPayment(savedReceipt);
     render(true);
   } catch (error) {
+    if (kiosk.stage === 'processing') { kiosk.paymentFailed(); render(true); return; }
     paymentError = error.message;
     updateCashPreview();
     if (kiosk.stage !== 'cash') notify(error.message);
@@ -133,6 +139,7 @@ app.addEventListener('click', async event => {
     if (action === 'method') kiosk.chooseMethod({ cash: 'Cash', qr: 'QR Payment', card: 'Credit/Debit Card' }[button.dataset.method]);
     if (action === 'back') { kiosk.back(); cashInput = ''; paymentError = ''; }
     if (action === 'pay') { await pay(); return; }
+    if (action === 'retry') { await pay(true); return; }
     if (action === 'receipt') kiosk.viewReceipt();
     if (action === 'print') { window.print(); return; }
     if (action === 'new') {

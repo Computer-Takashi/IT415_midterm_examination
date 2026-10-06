@@ -69,17 +69,39 @@ export class Kiosk {
     if (paid < this.total) throw new Error(`Insufficient Payment. Add ${money(this.total - paid)} to continue.`);
     // Capture the confirmed order once. No edits or duplicate payments while processing.
     this.pending = Object.freeze({
+      requestId: crypto.randomUUID(),
       lines: Object.freeze(this.lines.map(line => Object.freeze({ ...line }))),
       total: this.total, count: this.count, method: this.method, paid, change: paid - this.total
     });
     this.stage = 'processing';
   }
-  finishPayment() {
+  finishPayment(savedReceipt = null) {
     if (this.stage !== 'processing' || !this.pending) throw new Error('No valid payment is processing.');
-    this.receipt = Object.freeze({ ...this.pending, reference: `CC-${crypto.randomUUID().toUpperCase()}`, date: new Date().toISOString(), status: 'Payment Successful' });
+    if (savedReceipt) {
+      const matches = ['total', 'count', 'method', 'paid', 'change'].every(key => savedReceipt[key] === this.pending[key]);
+      const linesMatch = Array.isArray(savedReceipt.lines) && savedReceipt.lines.length === this.pending.lines.length &&
+        new Set(savedReceipt.lines.map(line => line.id)).size === this.pending.lines.length &&
+        savedReceipt.lines.every(line => this.pending.lines.some(expected => ['id','name','quantity','price','subtotal'].every(key => line[key] === expected[key])));
+      if (!matches || !linesMatch || !/^CC-[A-F0-9-]{36}$/.test(savedReceipt.reference) ||
+          !Number.isFinite(Date.parse(savedReceipt.date)) || savedReceipt.status !== 'Payment Successful') {
+        throw new Error('The saved receipt does not match this order. Retry confirmation.');
+      }
+    }
+    this.receipt = Object.freeze({ ...this.pending,
+      reference: savedReceipt?.reference || `CC-${crypto.randomUUID().toUpperCase()}`,
+      date: savedReceipt?.date || new Date().toISOString(), status: 'Payment Successful'
+    });
     this.pending = null;
     this.stage = 'success';
     return this.receipt;
+  }
+  paymentFailed() {
+    if (this.stage !== 'processing' || !this.pending) throw new Error('No payment to retry.');
+    this.stage = 'payment-error';
+  }
+  retryPayment() {
+    if (this.stage !== 'payment-error' || !this.pending) throw new Error('No pending payment.');
+    this.stage = 'processing';
   }
   viewReceipt() {
     if (this.stage !== 'success' || !this.receipt) throw new Error('Complete a valid payment before viewing a receipt.');

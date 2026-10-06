@@ -1,0 +1,67 @@
+/* Adapted from the user's PitayaGrade design tokens. Kiosk controls stay large. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  color-scheme: dark;
+  --green: #ff4081;
+  --ink: #f1f5f9;
+  --muted: #a6b4c8;
+  --line: #2b3850;
+  --yellow: #ff4081;
+  --surface: #0e1525;
+  --card: #141d30;
+  color: var(--ink);
+  background: #070b14;
+  font-family: Inter, 'Segoe UI', sans-serif;
+}
+body { background: radial-gradient(ellipse at 80% 0%, #e91e6310, transparent 50%), #070b14; }
+h1, h2, h3, .brand { font-family: 'Space Grotesk', Inter, 'Segoe UI', sans-serif; }
+.site-header, .progress { background: #0e1525ed; }
+.site-header { border-top: 3px solid #e91e63; }
+.brand-mark { background: linear-gradient(135deg, #e91e63, #c2185b); box-shadow: 0 0 24px #e91e632e; }
+.brand-mark span { color: #ffca28; }
+.brand small { color: var(--muted); }
+.demo-badge { border-color: #70304d; color: #ff97bb; background: #e91e630b; }
+.panel, .product-card { background: var(--card); box-shadow: 0 4px 16px #0003; }
+.product-card:hover, .payment-option:hover { background: #1a2540; border-color: #e91e6380; box-shadow: 0 6px 24px #e91e6318; }
+.product-category { color: #c4cfe0; }
+.peach { background: linear-gradient(135deg, #443023, #282239); }
+.yellow { background: linear-gradient(135deg, #414024, #253329); }
+.pink { background: linear-gradient(135deg, #482139, #272139); }
+.sand { background: linear-gradient(135deg, #413027, #262c3a); }
+.blue { background: linear-gradient(135deg, #193d53, #20243e); }
+.purple { background: linear-gradient(135deg, #392247, #25253e); }
+.add-circle { background: #ffffff12; color: #fff; border: 1px solid #ffffff20; }
+.product-details strong { color: #ff8ab2; }
+.product-details p, .hint, .count, .field-hint { font-size: .875rem; }
+.count, .quantity button { background: #1e293b; color: var(--ink); }
+.text-button { color: #ff9dbf; }
+.primary { background: linear-gradient(135deg, #d51c5a, #b61751); color: white; box-shadow: 0 4px 18px #e91e6320; }
+.primary:hover:not(:disabled) { background: #c2185b; }
+.secondary { background: #172237; color: #f1f5f9; border-color: #35435e; }
+.secondary:hover { background: #213049; }
+.step.active > span, .step.done > span { background: #c2185b; border-color: #e91e63; }
+.step.done { color: #bcc8d9; }
+.step.active { color: #ff8ab2; }
+.empty-cart > span { color: #7787a3; }
+.total-row strong, .due-banner strong, .receipt-total strong { font-family: 'Space Grotesk', sans-serif; }
+thead th, .reference { background: #0e1525; }
+.due-banner, .receipt-total { background: linear-gradient(120deg, #301b32, #191f36); border: 1px solid #60304d; }
+.method-icon { background: #e91e631a; color: #ff6a9c; border: 1px solid #e91e6333; }
+.payment-panel input { color: var(--ink); background: #0f1829; border-color: #40516e; }
+.keypad button { background: #1e293b; color: var(--ink); }
+.keypad button:hover { background: #303d54; }
+.cash-preview { background: #16352c; color: #9cebb7; }
+.error { color: #ffb1a6; }
+.qr-placeholder { background: #10192b; border-color: #a55c7b; }
+.success-icon { background: #17392a; color: #74e79c; border: 1px solid #2e6242; }
+.success-badge { background: #17392a; color: #9cebb7; }
+.toast { background: #283751; border: 1px solid #64708b; color: #fff; }
+.spinner { border-color: #3a2640; border-top-color: #ff4081; }
+button:focus-visible, input:focus-visible { outline-color: #ffb300; }
+.site-footer { background: #0e1525; }
+@media print {
+  :root { color-scheme: light; --ink: #111; --muted: #444; --line: #ccc; }
+  body, .receipt-panel, thead th, .receipt-total { background: white; color: black; box-shadow: none; }
+  .success-badge { color: #145a2f; background: #e4f4e8; }
+}
