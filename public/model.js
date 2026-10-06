@@ -5,7 +5,9 @@ export const PRODUCTS = Object.freeze([
   { id: 'soft-drink', name: 'Soft Drink', price: 3500, icon: '🥤', note: 'Cool, crisp & refreshing', category: 'DRINKS', color: 'pink' },
   { id: 'cookies', name: 'Cookies', price: 2500, icon: '🍪', note: 'A sweet study companion', category: 'SNACKS', color: 'sand' },
   { id: 'water', name: 'Bottled Water', price: 2000, icon: '💧', note: 'Keep your day flowing', category: 'DRINKS', color: 'blue' },
-  { id: 'chocolate', name: 'Chocolate', price: 2500, icon: '🍫', note: 'Make your break sweeter', category: 'SNACKS', color: 'purple' }
+  { id: 'chocolate', name: 'Chocolate', price: 2500, icon: '🍫', note: 'Make your break sweeter', category: 'SNACKS', color: 'purple' },
+  { id: 'cake', name: 'cake', price: 2500, icon: '🎂', note: 'Make your break sweeter', category: 'SNACKS', color: 'purple' },
+  { id: 'cake', name: 'mooncake', price: 2500, icon: '🥮', note: 'Make your break sweeter', category: 'SNACKS', color: 'purple' }
 ].map(Object.freeze));
 
 export const money = cents => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(cents / 100);
