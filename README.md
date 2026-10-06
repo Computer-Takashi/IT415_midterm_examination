@@ -6,7 +6,7 @@ A complete self-service campus food outlet kiosk. Customers select products, rev
 
 ## Setup and run
 
-Install Node.js 20 or newer. No packages, database, API keys or internet connection are needed to run the app.
+Install Node.js 20 or newer. No package installation is needed. Internet access is required to confirm and save payments in the connected Supabase database.
 
 ```sh
 git clone https://github.com/Computer-Takashi/IT415_midterm_examination.git
@@ -24,7 +24,9 @@ node --test tests/model.test.mjs
 
 `npm test` runs the same suite. In a restricted environment that blocks subprocess creation, recent Node.js versions also support `node --test --test-isolation=none tests/model.test.mjs`.
 
-The 27 tests cover required prices, arithmetic, empty orders, backward navigation, invalid/insufficient payments, exact/extra cash, QR/card payments, duplicate-payment guards, immutable receipts and reset. See [ACCEPTANCE.md](ACCEPTANCE.md) for browser evidence and reference limitations.
+The 29 tests cover required prices, arithmetic, empty orders, backward navigation, invalid/insufficient payments, exact/extra cash, QR/card payments, duplicate-payment guards, immutable receipts, persistence failures and reset. See [ACCEPTANCE.md](ACCEPTANCE.md) for evidence and [DEPLOYMENT.md](DEPLOYMENT.md) for Vercel/Supabase setup.
+
+`node scripts/verify-backend.mjs` runs live backend checks and creates three simulated transactions. It also verifies idempotent retries, invalid-input rejection and denied public database reads.
 
 ## Files and technologies
 
@@ -32,17 +34,26 @@ The 27 tests cover required prices, arithmetic, empty orders, backward navigatio
 public/
   index.html        Page shell, metadata and accessible regions
   styles.css        Touchscreen, responsive and print styles
+  pitaya-theme.css   Dark navy/pink theme adapted from PitayaGrade
   model.js          Catalog, integer money calculations and state machine
   app.js            Screen rendering, events, keypad and simulation
+  checkout.js       Supabase checkout request with timeout
+  backend-config.js Public endpoint and low-privilege anon JWT
 tests/
-  model.test.mjs    27 automated transaction tests
+  model.test.mjs    29 automated transaction tests
+supabase/
+  schema.sql        Tables, constraints, RLS and atomic checkout function
+  functions/kiosk-checkout/index.ts  Validating checkout endpoint
+scripts/
+  verify-backend.mjs Live persistence and access tests
+vercel.json         Static hosting configuration
 server.mjs          Dependency-free Node.js static server
 package.json        Optional npm shortcuts
 README.md           Setup and architecture
 ACCEPTANCE.md       Requirement verification
 ```
 
-Semantic HTML, CSS Grid/Flexbox and plain JavaScript ES modules power the interface. Node.js serves local files and runs tests; there is no backend transaction service.
+Semantic HTML, CSS Grid/Flexbox and plain JavaScript ES modules power the interface. Node.js serves local files and runs tests. Vercel serves the hosted frontend; a Supabase Edge Function validates checkout and invokes an atomic PostgreSQL function to save transactions.
 
 ## Architecture and flow
 
@@ -60,14 +71,17 @@ items → review → method → cash / qr / card → processing → success → 
 - Cash accepts plain decimal values with up to two decimal places, up to ₱999,999.99. Blank, negative, malformed, excessive-precision and insufficient values cannot create receipts.
 - The keypad, exact-amount and denomination shortcuts minimize typing. Denomination shortcuts set the amount; they do not add bills cumulatively.
 - QR has an explicitly labeled placeholder. Card displays tap/insert/swipe instructions. Both pay the exact total with zero change.
-- A valid payment captures an immutable order snapshot and shows a 1.2-second processing state. Editing, going backward and duplicate payment attempts are blocked while processing.
-- Success creates a UUID reference and timestamp. The receipt reads the captured snapshot, ensuring its values match the payment.
+- A valid payment captures an immutable snapshot and request UUID, then shows processing for at least 1.2 seconds while Supabase saves it. Editing, going backward and duplicate payment attempts are blocked while processing.
+- The server recalculates prices and totals from its own catalog. A single database transaction writes the receipt and line items. Repeating the same request UUID returns the original receipt, avoiding duplicate rows after a network retry.
+- Success appears only after the saved receipt matches the confirmed order. If confirmation fails, the app keeps the same request and offers Retry payment confirmation; it does not silently report success.
 - New Transaction clears the cart, method, pending payment, receipt, cash input, errors and feedback, returning to item selection.
 - Optional printing opens the browser print dialog. Print CSS hides kiosk controls.
 
 ## Storage and limitations
 
-All customer state lives **only in the current tab's memory**. There are no cookies, localStorage, sessionStorage, database or retained transaction records. Refreshing, closing the tab or choosing New Transaction clears the data. Tabs have independent carts. Save/print a receipt before reset if it is needed later.
+The active cart, amount input and displayed receipt live only in the current tab's memory. There are no application cookies, localStorage or sessionStorage. New Transaction clears the current customer screen; tabs have independent carts.
+
+Completed simulated receipts and purchased lines are retained in Supabase for instructor inspection. New Transaction does not delete these database records. No names, card numbers or other customer details are collected. There is no public history screen. Refreshing clears the current in-memory cart and receipt; save/print the receipt first if needed.
 
 The QR graphic is not scannable. Payment Successful indicates a simulation only. Currency is Philippine pesos; timestamps use the browser's local time. UUID generation requires a modern browser on localhost or HTTPS.
 
@@ -84,6 +98,6 @@ An optional, feature-detected read-only WebMCP tool (`read_kiosk_order`) returns
 
 ## Design references and Git history
 
-The Sample UI and original Acceptance Checklist DOCX were referenced but not attached. This implementation follows the detailed pasted requirements with an original touchscreen design. Exact visual matching and any additional requirements in the missing files remain unverified.
+The user subsequently requested the UI resemble PitayaGrade. Its dark navy surfaces, pink accents, rounded cards, and Inter/Space Grotesk typography are adapted from [the user's PitayaGrade design system](https://github.com/irlcrshrgva-ui/PitayaGrade/blob/main/css/styles.css). Fonts load from Google Fonts when online, with system fallbacks. The Sample UI and original Acceptance Checklist DOCX were not attached, so those separate references remain unverified.
 
 Real local development stages cover setup, catalog/cart, a Windows server-path fix, payment/receipt implementation, tests, focus improvements, source readability and documentation. Authentication initially blocked command-line pushes, so source was published through the user's signed-in GitHub browser account. GitHub commits reflect those actual web publication steps; no commits were backdated to imply additional development sessions.

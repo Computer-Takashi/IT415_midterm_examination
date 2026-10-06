@@ -4,7 +4,9 @@ Verified on 2026-10-06 against the detailed pasted assignment. The original DOCX
 
 ## Automated evidence
 
-**27 passed, 0 failed:** `node --test --test-isolation=none tests/model.test.mjs`. Model/UI JavaScript syntax checks passed. The local server returns HTTP 200.
+**29 passed, 0 failed:** `node --test --test-isolation=none tests/model.test.mjs`. Model/UI JavaScript syntax checks passed. The local server returns HTTP 200.
+
+Live Supabase integration checks also passed for all payment methods, matching retry references, changed-retry rejection, malformed/insufficient payments, missing gateway authorization, and public table-read denial. Three test transactions produced six saved line items. New Transaction clears the current customer screen while completed records remain in the database.
 
 | Requirement | Result | Evidence |
 | --- | --- | --- |
@@ -33,7 +35,12 @@ Verified on 2026-10-06 against the detailed pasted assignment. The original DOCX
 | Touchscreen/responsive UI | Pass | Large cards, 44px+ quantity controls, 56px primary buttons; desktop/mobile overflow checks |
 | Maintainability | Pass | Separate model/UI/styles, no external packages, documented flow |
 | Optional print | Implemented | Print action and CSS; physical printer output not tested |
-| Sample UI match | Not verifiable | Sample UI was not attached |
+| PitayaGrade theme | Implemented | Uses the user's repository design tokens: dark navy, pink accents, rounded cards, matching fonts |
+| Supabase persistence | Pass | Live saved receipts for all three methods; atomic line items; retry protection |
+| Database privacy | Pass | Public reads denied; RLS enabled; checkout function executable only by service role |
+| Persistence failure | Pass | No success without confirmation; same request ID retained for retry |
+| Vercel publication | Pending | Configuration prepared; deployment requires completion of Vercel sign-in |
+| Original Sample UI match | Not verifiable | Sample UI was not attached; later PitayaGrade styling request applied |
 | Original DOCX checklist | Not verifiable | Checklist was not attached |
 
-Payments are simulations. No payment gateway or physical cash/card hardware is required or tested. State is transient by design.
+Payments are simulations. No payment gateway or physical cash/card hardware is required or tested. Cart state is transient; completed transaction records persist.
