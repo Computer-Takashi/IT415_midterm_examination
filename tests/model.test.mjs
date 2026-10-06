@@ -114,3 +114,21 @@ test('reset completely clears previous customer state and references are unique'
   kiosk.change('water', 1); kiosk.review(); kiosk.paymentMethods(); kiosk.chooseMethod('QR Payment'); kiosk.beginPayment(); kiosk.finishPayment();
   assert.notEqual(kiosk.receipt.reference, firstReference); assert.equal(kiosk.receipt.total, 2000);
 });
+test('failed persistence cannot produce success; retry retains request identity', () => {
+  const kiosk = ready(); kiosk.beginPayment('200');
+  const requestId = kiosk.pending.requestId;
+  kiosk.paymentFailed();
+  assert.equal(kiosk.receipt, null); assert.equal(kiosk.stage, 'payment-error');
+  assert.throws(() => kiosk.viewReceipt());
+  kiosk.retryPayment(); assert.equal(kiosk.pending.requestId, requestId);
+  const receipt = kiosk.finishPayment(); assert.equal(receipt.change, 6000);
+});
+test('server receipt must match all confirmed values and lines', () => {
+  const kiosk = ready(); kiosk.beginPayment('200');
+  const valid = { ...kiosk.pending, reference: `CC-${crypto.randomUUID().toUpperCase()}`, date: new Date().toISOString(), status: 'Payment Successful' };
+  assert.throws(() => kiosk.finishPayment({ ...valid, total: 1 }));
+  assert.throws(() => kiosk.finishPayment({ ...valid, lines: [] }));
+  assert.throws(() => kiosk.finishPayment({ ...valid, reference: '<script>' }));
+  assert.equal(kiosk.receipt, null);
+  assert.equal(kiosk.finishPayment(valid).reference, valid.reference);
+});
